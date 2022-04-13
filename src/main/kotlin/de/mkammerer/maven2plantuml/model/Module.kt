@@ -3,7 +3,7 @@ package de.mkammerer.maven2plantuml.model
 data class Module(
         val group: String,
         val artifact: String,
-        val dependencies: Set<Dependency> = emptySet()
+        val dependencies: MutableList<Dependency> = mutableListOf()
 ) {
     /**
      * Finds all dependencies which are a dependency to one of the [modules].
