@@ -65,6 +65,11 @@ private fun doRun(args: Array<String>) {
         return
     }
 
+    if (System.getenv("MAVEN_HOME") == null || System.getenv("MAVEN_HOME").length == 0) {
+        System.err.println("MAVEN_HOME env variable must be set when using pom.xml directly");
+        return
+    }
+
     // val sb: StringBuilder = StringBuilder()
     // val lambdaName : InvocationOutputHandler = { va: String -> {
     //     sb.append(va)
@@ -110,7 +115,7 @@ private fun doRun(args: Array<String>) {
     request.setBatchMode(true)
     // request.setInputStream(InputStream.nullInputStream())
     val invoker: Invoker = DefaultInvoker()
-    invoker.setMavenHome( File("/usr/share/maven-bin-3.6"))
+    invoker.setMavenHome( File(System.getenv("MAVEN_HOME")))
     // invoker.setOutputHandler(mHandler)
     // /usr/share/maven-bin-3.6/bin
     invoker.execute( request )
