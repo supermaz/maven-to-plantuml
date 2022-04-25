@@ -56,6 +56,7 @@ private fun doRun(args: Array<String>) {
     options.addOption("o", "output", true, "Output file")
     options.addOption("e", "exclude", true, "Artifact names of modules to exclude. Separated by comma.")
     options.addOption(null, "console-output", false, "Instead of generating a PlantUML file, print the dependency graph to the console")
+    options.addOption("m", "maven-command", true, "Maven command to generate dependency tree")
 
     val parser = DefaultParser()
     val cli = parser.parse(options, args)
@@ -65,7 +66,7 @@ private fun doRun(args: Array<String>) {
         return
     }
 
-    if (System.getenv("MAVEN_HOME") == null || System.getenv("MAVEN_HOME").length == 0) {
+    if (cli.getOptionValue("input").endsWith("pom.xml") && (System.getenv("MAVEN_HOME") == null || System.getenv("MAVEN_HOME").length == 0)) {
         System.err.println("MAVEN_HOME env variable must be set when using pom.xml directly");
         return
     }
@@ -87,7 +88,7 @@ private fun doRun(args: Array<String>) {
 
     val mHandler =  object : InvocationOutputHandler {
         override fun consumeLine(msg: String) {
-            System.out.println(msg)
+            // System.out.println(msg)
             sb.append(msg).append("\n")
            }
 
@@ -104,26 +105,6 @@ private fun doRun(args: Array<String>) {
     PrintStream err = new PrintStream(baosErr, true);
      */
 
-    logger.info("Running maven dependency:tree")
-    // var mcli: MavenCli = MavenCli() 
-    // mcli.doMain(arrayOf("dependency:tree"), cli.getOptionValue("input"), System.out, System.out)
-    // mcli.doMain(arrayOf("verify"), cli.getOptionValue("input"), System.out, System.out)
-    val request: InvocationRequest = DefaultInvocationRequest()
-    request.setOutputHandler(mHandler)
-    request.setPomFile( File( cli.getOptionValue("input") ) )
-    request.setGoals( listOf( "dependency:tree" ) )
-    request.setBatchMode(true)
-    // request.setInputStream(InputStream.nullInputStream())
-    val invoker: Invoker = DefaultInvoker()
-    invoker.setMavenHome( File(System.getenv("MAVEN_HOME")))
-    // invoker.setOutputHandler(mHandler)
-    // /usr/share/maven-bin-3.6/bin
-    invoker.execute( request )
-
-    logger.info("maven output: " + sb.toString())
-    
-    logger.info("Done maven dependency:tree")
-
     val excludedModules = (cli.getOptionValue("exclude") ?: "").split(',').map { it.trim() }.toSet()
 
     val inputParser: InputParser = MavenInputParser
@@ -137,6 +118,28 @@ private fun doRun(args: Array<String>) {
     val project: Project
 
     if (cli.getOptionValue("input").endsWith("pom.xml")) {
+        val mvnCommand = cli.getOptionValue("maven-command") ?: "dependency:tree"
+        logger.info("Running maven " + mvnCommand)
+        // var mcli: MavenCli = MavenCli() 
+        // mcli.doMain(arrayOf("dependency:tree"), cli.getOptionValue("input"), System.out, System.out)
+        // mcli.doMain(arrayOf("verify"), cli.getOptionValue("input"), System.out, System.out)
+        val request: InvocationRequest = DefaultInvocationRequest()
+        // val mvnCommand = "dependency:tree"
+        request.setOutputHandler(mHandler)
+        request.setPomFile( File( cli.getOptionValue("input") ) )
+        request.setGoals( listOf( mvnCommand ) )
+        request.setBatchMode(true)
+        // request.setInputStream(InputStream.nullInputStream())
+        val invoker: Invoker = DefaultInvoker()
+        invoker.setMavenHome( File(System.getenv("MAVEN_HOME")))
+        // invoker.setOutputHandler(mHandler)
+        // /usr/share/maven-bin-3.6/bin
+        invoker.execute( request )
+
+        logger.info("maven output: " + sb.toString())
+        
+        logger.info("Done maven " + mvnCommand)
+
         logger.info("Using pom maven result file")
         val inputStream: InputStream = sb.toString().byteInputStream()
         project = inputStream.use {
